@@ -1,0 +1,277 @@
+<!DOCTYPE html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <title>PGH-PCNSL Protocol Generator</title>
+    <link rel="stylesheet" href="./styles.css" />
+  </head>
+  <body>
+    <main class="shell">
+      <header class="topbar">
+        <div>
+          <p class="eyebrow">Neuro-Oncology Form Builder</p>
+          <h1>PGH-PCNSL Protocol Generator</h1>
+        </div>
+        <div class="template-note">Fill out all the required details</div>
+      </header>
+
+      <section class="workspace">
+        <form class="panel form-panel" id="pcnsl-form">
+          <div class="section-head">
+            <h2>Patient</h2>
+          </div>
+
+          <div class="grid">
+            <label>
+              Patient name
+              <input id="name" required autocomplete="name" />
+            </label>
+            <label>
+              PWI / diagnosis
+              <textarea id="pwi" rows="3" required></textarea>
+            </label>
+          </div>
+
+          <div class="grid two">
+            <label>
+              Case number
+              <input id="case-number" />
+            </label>
+            <label>
+              Contact number
+              <input id="contact-number" />
+            </label>
+            <label>
+              Age
+              <input id="age" type="number" min="0" step="1" required />
+            </label>
+            <label>
+              Sex
+              <select id="sex" required>
+                <option value="F">Female</option>
+                <option value="M">Male</option>
+              </select>
+            </label>
+          </div>
+
+          <div class="grid two">
+            <label>
+              Address
+              <textarea id="address" rows="2"></textarea>
+            </label>
+            <label>
+              Assessment / comorbidities
+              <textarea id="assessment" rows="5"></textarea>
+            </label>
+          </div>
+
+          <div class="section-head">
+            <h2>Body Surface Area</h2>
+          </div>
+
+          <div class="measure-grid">
+            <div class="measure">
+              <div class="measure-head">
+                <span>Height</span>
+                <div class="unit-toggle" id="height-toggle" aria-label="Height unit">
+                  <button type="button" class="active" data-unit="cm">cm</button>
+                  <button type="button" data-unit="ftin">ft/in</button>
+                </div>
+              </div>
+              <div class="grid" id="height-cm-wrap">
+                <label>
+                  Height in cm
+                  <input id="height-cm" type="number" min="0" step="0.1" required />
+                </label>
+              </div>
+              <div class="grid two hidden" id="height-ftin-wrap">
+                <label>
+                  Feet
+                  <input id="height-ft" type="number" min="0" step="1" />
+                </label>
+                <label>
+                  Inches
+                  <input id="height-in" type="number" min="0" step="0.1" />
+                </label>
+              </div>
+            </div>
+
+            <div class="measure">
+              <div class="measure-head">
+                <span>Weight</span>
+                <div class="unit-toggle" id="weight-toggle" aria-label="Weight unit">
+                  <button type="button" class="active" data-unit="kg">kg</button>
+                  <button type="button" data-unit="lbs">lbs</button>
+                </div>
+              </div>
+              <div class="grid" id="weight-kg-wrap">
+                <label>
+                  Weight in kg
+                  <input id="weight-kg" type="number" min="0" step="0.1" required />
+                </label>
+              </div>
+              <div class="grid hidden" id="weight-lbs-wrap">
+                <label>
+                  Weight in lbs
+                  <input id="weight-lbs" type="number" min="0" step="0.1" />
+                </label>
+              </div>
+            </div>
+
+            <label>
+              Date referred
+              <input id="date-referred" type="date" required />
+            </label>
+          </div>
+
+          <div class="section-head">
+            <h2>Schedule</h2>
+          </div>
+
+          <label class="checkbox-row">
+            <input id="include-rituximab" type="checkbox" checked />
+            <span>Include Rituximab in protocol</span>
+          </label>
+
+          <div class="grid three">
+            <label>
+              First methotrexate date
+              <input id="mtx-start" type="date" required />
+            </label>
+            <label>
+              Rituximab offset (days)
+              <input id="rituximab-offset" type="number" step="1" value="1" />
+            </label>
+            <label>
+              Induction cycles
+              <input id="induction-cycles" type="number" min="1" max="8" step="1" value="6" />
+            </label>
+            <label>
+              Induction interval (days)
+              <input id="induction-interval" type="number" min="1" step="1" value="14" />
+            </label>
+            <label>
+              Consolidation cycles
+              <input id="consolidation-cycles" type="number" min="1" max="6" step="1" value="6" />
+            </label>
+            <label>
+              Consolidation interval (days)
+              <input id="consolidation-interval" type="number" min="1" step="1" value="28" />
+            </label>
+          </div>
+
+          <details>
+            <summary>Drug and price defaults</summary>
+            <div class="grid four detail-grid">
+              <label>
+                Rituximab mg/m2
+                <input id="rituximab-mgm2" type="number" min="0" step="1" value="375" />
+              </label>
+              <label>
+                Rituximab round to mg
+                <input id="rituximab-round" type="number" min="1" step="1" value="50" />
+              </label>
+              <label>
+                Rituximab 500 mg vial size
+                <input id="rituximab-vial-mg" type="number" min="1" step="1" value="500" />
+              </label>
+              <label>
+                Rituximab 500 mg vial price
+                <input id="rituximab-price" type="number" min="0" step="0.01" value="31000" />
+              </label>
+              <label>
+                Rituximab 100 mg vial size
+                <input id="rituximab-vial-100-mg" type="number" min="1" step="1" value="100" />
+              </label>
+              <label>
+                Rituximab 100 mg vial price
+                <input id="rituximab-price-100" type="number" min="0" step="0.01" value="8343.75" />
+              </label>
+              <label>
+                Methotrexate g/m2
+                <input id="mtx-gm2" type="number" min="0" step="0.1" value="8" />
+              </label>
+              <label>
+                Methotrexate round to g
+                <input id="mtx-round" type="number" min="0.1" step="0.1" value="0.5" />
+              </label>
+              <label>
+                Methotrexate vial g
+                <input id="mtx-vial-g" type="number" min="0.1" step="0.1" value="1" />
+              </label>
+              <label>
+                Methotrexate vial price
+                <input id="mtx-price" type="number" min="0" step="0.01" value="6000" />
+              </label>
+            </div>
+          </details>
+
+          <div class="actions">
+            <button class="primary" type="submit">Generate Word Files</button>
+            <button class="secondary" type="button" id="download-oncopharm">Download Oncopharm Protocol</button>
+            <button class="secondary" type="button" id="fill-sample">Load Sample</button>
+          </div>
+          <p class="status" id="status"></p>
+        </form>
+
+        <aside class="panel summary-panel">
+          <div class="section-head">
+            <h2>Live Summary</h2>
+          </div>
+
+          <div class="metrics">
+            <div class="metric">
+              <span>BSA</span>
+              <strong id="metric-bsa">-</strong>
+            </div>
+            <div class="metric">
+              <span>Rituximab</span>
+              <strong id="metric-rituximab">-</strong>
+            </div>
+            <div class="metric">
+              <span>Methotrexate</span>
+              <strong id="metric-mtx">-</strong>
+            </div>
+            <div class="metric">
+              <span>Total estimate</span>
+              <strong id="metric-total">-</strong>
+            </div>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Phase</th>
+                  <th>Rituximab</th>
+                  <th>Methotrexate</th>
+                </tr>
+              </thead>
+              <tbody id="schedule-table"></tbody>
+            </table>
+          </div>
+
+          <div class="table-wrap">
+            <table>
+              <thead>
+                <tr>
+                  <th>Drug</th>
+                  <th>Patient dose</th>
+                  <th>Items</th>
+                  <th>Cost</th>
+                </tr>
+              </thead>
+              <tbody id="drug-table"></tbody>
+            </table>
+          </div>
+        </aside>
+      </section>
+    </main>
+
+    <script src="./vendor/jszip.min.js"></script>
+    <script src="./vendor/pdf-lib.min.js"></script>
+    <script src="./template-data.js"></script>
+    <script src="./app.js"></script>
+  </body>
+</html>
