@@ -1,5 +1,6 @@
 (function () {
   const DOCX_MIME = "application/vnd.openxmlformats-officedocument.wordprocessingml.document";
+  const WORD_NS = "http://schemas.openxmlformats.org/wordprocessingml/2006/main";
   const state = {
     heightUnit: "cm",
     weightUnit: "kg",
@@ -146,12 +147,21 @@
     return Math.max(Math.round(value / step) * step, step);
   }
 
+  function floorTo(value, increment) {
+    const step = Math.max(num(increment, 1), 0.01);
+    return Math.floor((value + Number.EPSILON) / step) * step;
+  }
+
   function plural(value, unit) {
     return `${value} ${unit}${Number(value) === 1 ? "" : "s"}`;
   }
 
   function doseG(value) {
     return `${Number(value).toFixed(Number(value) % 1 ? 1 : 0)} g`;
+  }
+
+  function dosePerM2(value) {
+    return Number(value).toFixed(Number(value) % 1 ? 1 : 0);
   }
 
   function vialLine(count, strength, unit) {
@@ -233,11 +243,12 @@
     const rituximabOffset = Math.round(num(el.rituximabOffset.value, 1));
     const induction = makeSchedule(mtxStart, inductionCycles, inductionInterval, rituximabOffset);
     const lastInductionMtx = induction[induction.length - 1].methotrexate;
-    const firstConsolidationMtx = addDays(lastInductionMtx, consolidationInterval);
+    const firstConsolidationMtx = addDays(lastInductionMtx, 28);
     const consolidation = makeSchedule(firstConsolidationMtx, consolidationCycles, consolidationInterval, rituximabOffset);
 
     const rituximabDose = roundTo(bsa * num(el.rituximabMgm2.value, 375), num(el.rituximabRound.value, 50));
-    const mtxDoseG = roundTo(bsa * num(el.mtxGm2.value, 8), num(el.mtxRound.value, 0.5));
+    const mtxDosePerM2 = Math.min(Math.max(num(el.mtxGm2.value, 8), 0), 8);
+    const mtxDoseG = floorTo(bsa * mtxDosePerM2, num(el.mtxRound.value, 0.5));
     const rituximabVialMg = Math.max(num(el.rituximabVialMg.value, 500), 1);
     const rituximabVial100Mg = Math.max(num(el.rituximabVial100Mg.value, 100), 1);
     const rituximabPrice = num(el.rituximabPrice.value);
@@ -288,6 +299,7 @@
       rituximabCostPerDose: rituximabVialPlan.cost,
       rituximabTotal,
       mtxDoseG,
+      mtxDosePerM2,
       mtxVialsPerDose,
       mtxTotalVials,
       mtxTotal,
@@ -400,6 +412,26 @@
     return rowTexts(row).some((node) => node.textContent === text);
   }
 
+  function directCells(row) {
+    return Array.from(row.childNodes).filter((node) => node.nodeName === "w:tc");
+  }
+
+  function setCellText(cell, text) {
+    let nodes = Array.from(cell.getElementsByTagName("w:t"));
+    if (!nodes.length) {
+      const doc = cell.ownerDocument;
+      const paragraph = doc.createElementNS(WORD_NS, "w:p");
+      const run = doc.createElementNS(WORD_NS, "w:r");
+      const textNode = doc.createElementNS(WORD_NS, "w:t");
+      run.appendChild(textNode);
+      paragraph.appendChild(run);
+      cell.appendChild(paragraph);
+      nodes = [textNode];
+    }
+    nodes[0].textContent = String(text);
+    for (let i = 1; i < nodes.length; i += 1) nodes[i].textContent = "";
+  }
+
   function fillRituximabRow(row, cycle, date) {
     const nodes = rowTexts(row);
     if (nodes.length >= 4) {
@@ -454,6 +486,29 @@
         fillCycleDrugRow(mtxRow, index + 1, "Methotrexate", item.methotrexate);
         table.appendChild(mtxRow);
       }
+    });
+  }
+
+  function fillEndorsementDateColumn(doc, tableIndex, schedule, includeRituximab = true) {
+    const table = doc.getElementsByTagName("w:tbl")[tableIndex];
+    if (!table) return;
+    const rows = directRows(table).slice(1);
+    const scheduleRowsByCycle = [];
+    schedule.forEach((item) => {
+      if (includeRituximab) {
+        scheduleRowsByCycle.push({ cycle: item.cycle, drug: "Rituximab", date: item.rituximab });
+      }
+      scheduleRowsByCycle.push({ cycle: item.cycle, drug: "Methotrexate", date: item.methotrexate });
+    });
+
+    rows.forEach((row, index) => {
+      const item = scheduleRowsByCycle[index];
+      const cells = directCells(row);
+      if (!item || cells.length < 4) return;
+      setCellText(cells[0], item.cycle);
+      setCellText(cells[1], item.drug);
+      setCellText(cells[2], "1");
+      setCellText(cells[3], fmtDate(item.date));
     });
   }
 
@@ -535,7 +590,7 @@
       [23, "2"],
       [34, model.includeRituximab ? `For induction chemotherapy with Rituximab and High-Dose Methotrexate every 2 weeks for ${model.inductionCycles} cycles then every 4 weeks for ${model.consolidationCycles} consolidation cycles` : `For induction chemotherapy with High-Dose Methotrexate every 2 weeks for ${model.inductionCycles} cycles then every 4 weeks for ${model.consolidationCycles} consolidation cycles`],
       [137, model.includeRituximab ? `Administer Rituximab ${model.rituximabDose} mg in enough PNSS to make 500mL via infusion pump x 50cc/hour for the first 30 minutes, then increase by 50cc/hr every 30 minutes to maximum 150cc/hr` : ""],
-      [153, `Hook methotrexate ${model.mtxDoseG}g (8g/m`],
+      [153, `Hook methotrexate ${model.mtxDoseG}g (${dosePerM2(model.mtxDosePerM2)}g/m`],
     ]);
     if (!model.includeRituximab) {
       blankIndexes(nodes, [114, 115, 116, 117, 118, 119, 120, 128, 129, 130, 131, 132, 133, 134, 135, 136, 138, 139, 140]);
@@ -543,6 +598,8 @@
     replaceParagraphWithLines(nodes, 25, 7, model.assessment.length ? model.assessment : [model.pwi]);
     fillScheduleTable(doc, 3, model.induction, model.includeRituximab);
     fillScheduleTable(doc, 4, model.consolidation, model.includeRituximab);
+    fillEndorsementDateColumn(doc, 3, model.induction, model.includeRituximab);
+    fillEndorsementDateColumn(doc, 4, model.consolidation, model.includeRituximab);
 
     return serializeDocx(zip, doc);
   }
@@ -558,11 +615,11 @@
       [15, model.name],
       [18, model.caseNumber || "-"],
       [23, model.pwi || "Primary CNS Lymphoma"],
-      [40, `8g/BSA = 8g x ${model.bsa.toFixed(2)} m`],
+      [40, `${dosePerM2(model.mtxDosePerM2)}g/BSA = ${dosePerM2(model.mtxDosePerM2)}g x ${model.bsa.toFixed(2)} m`],
       [42, ` = ${doseG(model.mtxDoseG)}`],
       [43, plural(model.mtxVialsPerDose, "vial")],
       [46, ` ${new Intl.NumberFormat("en-PH", { minimumFractionDigits: 2, maximumFractionDigits: 2 }).format(total)}`],
-      [48, ` Methotrexate ${doseG(model.mtxDoseG)} (8g/BSA) in enough `],
+      [48, ` Methotrexate ${doseG(model.mtxDoseG)} (${dosePerM2(model.mtxDosePerM2)}g/BSA) in enough `],
     ]);
     return serializeDocx(zip, doc);
   }
@@ -623,8 +680,8 @@
       "[sex]": model.sex,
       "Methotrexate": "Methotrexate",
       "Rituximab": model.includeRituximab ? "Rituximab" : "",
-      "1 day (day 1)": `Day 1 - ${fmtShort(model.induction[0].methotrexate)}`,
-      "1 day (day 2)": model.includeRituximab ? `Day 2 - ${fmtShort(model.induction[0].rituximab)}` : "",
+      "1 day (day 1)": "1 day (day 1)",
+      "1 day (day 2)": model.includeRituximab ? "1 day (day 2)" : "",
       "in enough PNSS to make 500mL": "in enough PNSS to make 500mL",
     }, {
       5: `${model.bsa.toFixed(2)} m2`,

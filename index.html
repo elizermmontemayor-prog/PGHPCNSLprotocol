@@ -140,8 +140,12 @@
               <input id="mtx-start" type="date" required />
             </label>
             <label>
-              Rituximab offset (days)
-              <input id="rituximab-offset" type="number" step="1" value="1" />
+              Rituximab timing
+              <select id="rituximab-offset">
+                <option value="-1">Methotrexate day -1</option>
+                <option value="1" selected>Methotrexate day +1</option>
+                <option value="2">Methotrexate day +2</option>
+              </select>
             </label>
             <label>
               Induction cycles
@@ -189,8 +193,8 @@
                 <input id="rituximab-price-100" type="number" min="0" step="0.01" value="8343.75" />
               </label>
               <label>
-                Methotrexate g/m2
-                <input id="mtx-gm2" type="number" min="0" step="0.1" value="8" />
+                Methotrexate g/m2 (cap 8)
+                <input id="mtx-gm2" type="number" min="0" max="8" step="0.1" value="8" />
               </label>
               <label>
                 Methotrexate round to g
